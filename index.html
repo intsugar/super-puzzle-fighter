@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Super Puzzle Fighter II</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 4/3;
+            position: relative;
+        }
+
+        #game-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        #controls {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        /* D-Pad */
+        #dpad {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+            width: 140px;
+            height: 140px;
+            pointer-events: auto;
+        }
+
+        .dpad-btn {
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.18);
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: rgba(255, 255, 255, 0.7);
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        .dpad-btn:active, .dpad-btn.active {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        #dpad-up    { top: 0;    left: 46px; }
+        #dpad-down  { bottom: 0; left: 46px; }
+        #dpad-left  { top: 46px; left: 0;    }
+        #dpad-right { top: 46px; right: 0;   }
+
+        /* Action buttons */
+        #buttons-right {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        .action-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+            pointer-events: auto;
+            touch-action: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .action-btn:active, .action-btn.active {
+            transform: scale(0.93);
+        }
+
+        #btn-action {
+            background: rgba(0, 150, 255, 0.35);
+            border-color: rgba(0, 150, 255, 0.6);
+        }
+
+        /* Top bar buttons */
+        #buttons-top {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .top-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            font-weight: bold;
+            pointer-events: auto;
+            touch-action: none;
+            text-transform: uppercase;
+        }
+
+        .top-btn:active, .top-btn.active {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        #btn-coin {
+            border-color: rgba(255, 200, 0, 0.5);
+            color: rgba(255, 220, 50, 0.9);
+        }
+
+        #btn-start {
+            border-color: rgba(0, 255, 100, 0.5);
+            color: rgba(0, 255, 100, 0.9);
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            #controls {
+                display: block;
+            }
+            #game-container {
+                height: calc(100vh - 210px);
+                aspect-ratio: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="game"></div>
+    </div>
+
+    <div id="controls">
+        <!-- D-Pad -->
+        <div id="dpad">
+            <div class="dpad-btn" id="dpad-up" data-key="ArrowUp">&#9650;</div>
+            <div class="dpad-btn" id="dpad-down" data-key="ArrowDown">&#9660;</div>
+            <div class="dpad-btn" id="dpad-left" data-key="ArrowLeft">&#9664;</div>
+            <div class="dpad-btn" id="dpad-right" data-key="ArrowRight">&#9654;</div>
+        </div>
+
+        <!-- Action Button -->
+        <div id="buttons-right">
+            <div class="action-btn" id="btn-action" data-key="z">&#9679;</div>
+        </div>
+
+        <!-- Coin & Start -->
+        <div id="buttons-top">
+            <div class="top-btn" id="btn-coin" data-key="Enter">COIN</div>
+            <div class="top-btn" id="btn-start" data-key="1">START</div>
+        </div>
+    </div>
+
+    <script>
+        // EmulatorJS Configuration
+        EJS_player = '#game';
+        EJS_core = 'mame2003';
+        EJS_gameUrl = 'roms/spf2xj.zip';
+        EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+        EJS_startOnLoaded = true;
+        EJS_backgroundBlur = true;
+        EJS_backgroundColor = '#000';
+        EJS_color = '#1e90ff';
+
+        // Key mappings for CPS2:
+        // Player 1: arrows = directions, z = button 1, Enter = coin, 1 = start
+        EJS_defaultControls = {
+            0: {
+                0: { value: 'ArrowUp' },    // Up
+                1: { value: 'ArrowDown' },   // Down
+                2: { value: 'ArrowLeft' },   // Left
+                3: { value: 'ArrowRight' },  // Right
+                4: { value: 'z' },           // B (action)
+                5: { value: 'z' },           // A (same action)
+                8: { value: '1' },           // Start
+                9: { value: 'Enter' },       // Select/Coin
+                24: { value: 'z' },          // L (action)
+                25: { value: 'z' },          // R (action)
+            }
+        };
+    </script>
+    <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+
+    <script>
+        // Virtual controls - dispatch keyboard events
+        function simulateKey(key, type) {
+            const event = new KeyboardEvent(type, {
+                key: key,
+                code: key === 'ArrowUp' ? 'ArrowUp' :
+                      key === 'ArrowDown' ? 'ArrowDown' :
+                      key === 'ArrowLeft' ? 'ArrowLeft' :
+                      key === 'ArrowRight' ? 'ArrowRight' :
+                      key === 'z' ? 'KeyZ' :
+                      key === '1' ? 'Digit1' :
+                      key === 'Enter' ? 'Enter' : '',
+                keyCode: key === 'ArrowUp' ? 38 :
+                         key === 'ArrowDown' ? 40 :
+                         key === 'ArrowLeft' ? 37 :
+                         key === 'ArrowRight' ? 39 :
+                         key === 'z' ? 90 :
+                         key === '1' ? 49 :
+                         key === 'Enter' ? 13 : 0,
+                bubbles: true,
+                cancelable: true
+            });
+            document.dispatchEvent(event);
+        }
+
+        // Bind touch events to all virtual buttons
+        document.querySelectorAll('[data-key]').forEach(btn => {
+            const key = btn.dataset.key;
+
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                btn.classList.add('active');
+                simulateKey(key, 'keydown');
+            }, { passive: false });
+
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                btn.classList.remove('active');
+                simulateKey(key, 'keyup');
+            }, { passive: false });
+
+            btn.addEventListener('touchcancel', (e) => {
+                btn.classList.remove('active');
+                simulateKey(key, 'keyup');
+            });
+
+            // Mouse fallback for testing on desktop
+            btn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                btn.classList.add('active');
+                simulateKey(key, 'keydown');
+            });
+
+            btn.addEventListener('mouseup', (e) => {
+                e.preventDefault();
+                btn.classList.remove('active');
+                simulateKey(key, 'keyup');
+            });
+
+            btn.addEventListener('mouseleave', () => {
+                btn.classList.remove('active');
+                simulateKey(key, 'keyup');
+            });
+        });
+
+        // Prevent zoom on double-tap
+        document.addEventListener('dblclick', (e) => e.preventDefault());
+    </script>
+</body>
+</html>
