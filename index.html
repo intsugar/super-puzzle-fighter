@@ -5,293 +5,230 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Super Puzzle Fighter II</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { background: #000; width: 100%; height: 100%; overflow: hidden; }
 
-        body {
-            background: #000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
+        #loading {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: #000; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-
-        #game-container {
-            width: 100%;
-            max-width: 800px;
-            aspect-ratio: 4/3;
-            position: relative;
+        #loading .title {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 28px; font-weight: bold; color: #ffcc00;
+            text-shadow: 0 0 20px rgba(255,200,0,0.5); margin-bottom: 10px;
         }
+        #loading .subtitle {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 14px; color: #aaa; margin-bottom: 30px;
+        }
+        #loading .status {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 13px; color: #888;
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 4px solid rgba(30,144,255,0.2);
+            border-top: 4px solid #1e90ff; border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        #game-container canvas {
-            width: 100% !important;
-            height: 100% !important;
+        #game-frame {
+            width: 100vw; height: 100vh; border: none;
+            display: none; position: absolute; top: 0; left: 0;
         }
 
         #controls {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 200px;
-            z-index: 1000;
-            pointer-events: none;
+            display: none; position: fixed; bottom: 0; left: 0; right: 0;
+            height: 200px; z-index: 10000; pointer-events: none;
+            touch-action: none; user-select: none; -webkit-user-select: none;
         }
-
-        /* D-Pad */
-        #dpad {
-            position: absolute;
-            left: 20px;
-            bottom: 20px;
-            width: 140px;
-            height: 140px;
-            pointer-events: auto;
-        }
-
+        #dpad { position: absolute; left: 20px; bottom: 20px; width: 140px; height: 140px; pointer-events: auto; }
         .dpad-btn {
-            position: absolute;
-            width: 48px;
-            height: 48px;
-            background: rgba(255, 255, 255, 0.18);
-            border: 2px solid rgba(255, 255, 255, 0.35);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            color: rgba(255, 255, 255, 0.7);
-            pointer-events: auto;
-            touch-action: none;
+            position: absolute; width: 48px; height: 48px;
+            background: rgba(255,255,255,0.18); border: 2px solid rgba(255,255,255,0.35);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 22px; color: rgba(255,255,255,0.7); pointer-events: auto; touch-action: none;
         }
+        .dpad-btn:active, .dpad-btn.active { background: rgba(255,255,255,0.4); }
+        #dpad-up { top: 0; left: 46px; }
+        #dpad-down { bottom: 0; left: 46px; }
+        #dpad-left { top: 46px; left: 0; }
+        #dpad-right { top: 46px; right: 0; }
 
-        .dpad-btn:active, .dpad-btn.active {
-            background: rgba(255, 255, 255, 0.4);
-        }
-
-        #dpad-up    { top: 0;    left: 46px; }
-        #dpad-down  { bottom: 0; left: 46px; }
-        #dpad-left  { top: 46px; left: 0;    }
-        #dpad-right { top: 46px; right: 0;   }
-
-        /* Action buttons */
-        #buttons-right {
-            position: absolute;
-            right: 20px;
-            bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            align-items: center;
-            pointer-events: auto;
-        }
-
+        #buttons-right { position: absolute; right: 20px; bottom: 20px; display: flex; gap: 12px; pointer-events: auto; }
         .action-btn {
-            width: 72px;
-            height: 72px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.35);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: bold;
-            color: #fff;
-            pointer-events: auto;
-            touch-action: none;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            width: 60px; height: 60px; border-radius: 50%;
+            border: 2px solid rgba(0,150,255,0.6); background: rgba(0,150,255,0.35);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: bold; color: #fff; pointer-events: auto; touch-action: none;
         }
+        .action-btn:active, .action-btn.active { transform: scale(0.93); }
+        #btn-b2 { border-color: rgba(255,100,0,0.6); background: rgba(255,100,0,0.35); }
 
-        .action-btn:active, .action-btn.active {
-            transform: scale(0.93);
-        }
-
-        #btn-action {
-            background: rgba(0, 150, 255, 0.35);
-            border-color: rgba(0, 150, 255, 0.6);
-        }
-
-        /* Top bar buttons */
-        #buttons-top {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            display: flex;
-            gap: 10px;
-            pointer-events: auto;
-        }
-
+        #buttons-top { position: absolute; top: 10px; right: 10px; display: flex; gap: 10px; pointer-events: auto; }
         .top-btn {
-            padding: 8px 16px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.12);
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 12px;
-            font-weight: bold;
-            pointer-events: auto;
-            touch-action: none;
-            text-transform: uppercase;
+            padding: 8px 16px; border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.8); font-size: 12px; font-weight: bold;
+            pointer-events: auto; touch-action: none; text-transform: uppercase;
         }
-
-        .top-btn:active, .top-btn.active {
-            background: rgba(255, 255, 255, 0.35);
-        }
-
-        #btn-coin {
-            border-color: rgba(255, 200, 0, 0.5);
-            color: rgba(255, 220, 50, 0.9);
-        }
-
-        #btn-start {
-            border-color: rgba(0, 255, 100, 0.5);
-            color: rgba(0, 255, 100, 0.9);
-        }
+        .top-btn:active, .top-btn.active { background: rgba(255,255,255,0.35); }
+        #btn-coin { border-color: rgba(255,200,0,0.5); color: rgba(255,220,50,0.9); }
+        #btn-start { border-color: rgba(0,255,100,0.5); color: rgba(0,255,100,0.9); }
 
         @media (hover: none) and (pointer: coarse) {
-            #controls {
-                display: block;
-            }
-            #game-container {
-                height: calc(100vh - 210px);
-                aspect-ratio: auto;
-            }
+            #controls { display: block; }
+            #game-frame { height: calc(100vh - 210px); }
         }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <div id="game"></div>
+    <div id="loading">
+        <div class="title">SUPER PUZZLE FIGHTER II</div>
+        <div class="subtitle">Arcade</div>
+        <div class="spinner"></div>
+        <div class="status" id="load-status">Loading...</div>
     </div>
 
+    <iframe id="game-frame"></iframe>
+
     <div id="controls">
-        <!-- D-Pad -->
         <div id="dpad">
             <div class="dpad-btn" id="dpad-up" data-key="ArrowUp">&#9650;</div>
             <div class="dpad-btn" id="dpad-down" data-key="ArrowDown">&#9660;</div>
             <div class="dpad-btn" id="dpad-left" data-key="ArrowLeft">&#9664;</div>
             <div class="dpad-btn" id="dpad-right" data-key="ArrowRight">&#9654;</div>
         </div>
-
-        <!-- Action Button -->
         <div id="buttons-right">
-            <div class="action-btn" id="btn-action" data-key="z">&#9679;</div>
+            <div class="action-btn" id="btn-b1" data-key="KeyA">A</div>
+            <div class="action-btn" id="btn-b2" data-key="KeyS">B</div>
         </div>
-
-        <!-- Coin & Start -->
         <div id="buttons-top">
-            <div class="top-btn" id="btn-coin" data-key="Enter">COIN</div>
-            <div class="top-btn" id="btn-start" data-key="1">START</div>
+            <div class="top-btn" id="btn-coin" data-key="Digit1">COIN</div>
+            <div class="top-btn" id="btn-start" data-key="Enter">START</div>
         </div>
     </div>
 
     <script>
-        // EmulatorJS Configuration
-        EJS_player = '#game';
-        EJS_core = 'mame2003';
-        EJS_gameUrl = 'roms/spf2xj.zip';
-        EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-        EJS_startOnLoaded = true;
-        EJS_backgroundBlur = true;
-        EJS_backgroundColor = '#000';
-        EJS_color = '#1e90ff';
+        // Global variables accessed by emu.html via parent.ROMDATA / parent.ROMNAME / parent.RETROCFG
+        var ROMDATA = null;
+        var ROMNAME = "spf2xj.zip";
+        var RETROCFG = "";
+        var statusEl = document.getElementById("load-status");
 
-        // Key mappings for CPS2:
-        // Player 1: arrows = directions, z = button 1, Enter = coin, 1 = start
-        EJS_defaultControls = {
-            0: {
-                0: { value: 'ArrowUp' },    // Up
-                1: { value: 'ArrowDown' },   // Down
-                2: { value: 'ArrowLeft' },   // Left
-                3: { value: 'ArrowRight' },  // Right
-                4: { value: 'z' },           // B (action)
-                5: { value: 'z' },           // A (same action)
-                8: { value: '1' },           // Start
-                9: { value: 'Enter' },       // Select/Coin
-                24: { value: 'z' },          // L (action)
-                25: { value: 'z' },          // R (action)
-            }
-        };
-    </script>
-    <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
-
-    <script>
-        // Virtual controls - dispatch keyboard events
-        function simulateKey(key, type) {
-            const event = new KeyboardEvent(type, {
-                key: key,
-                code: key === 'ArrowUp' ? 'ArrowUp' :
-                      key === 'ArrowDown' ? 'ArrowDown' :
-                      key === 'ArrowLeft' ? 'ArrowLeft' :
-                      key === 'ArrowRight' ? 'ArrowRight' :
-                      key === 'z' ? 'KeyZ' :
-                      key === '1' ? 'Digit1' :
-                      key === 'Enter' ? 'Enter' : '',
-                keyCode: key === 'ArrowUp' ? 38 :
-                         key === 'ArrowDown' ? 40 :
-                         key === 'ArrowLeft' ? 37 :
-                         key === 'ArrowRight' ? 39 :
-                         key === 'z' ? 90 :
-                         key === '1' ? 49 :
-                         key === 'Enter' ? 13 : 0,
-                bubbles: true,
-                cancelable: true
-            });
-            document.dispatchEvent(event);
+        // Build retroarch config
+        function buildConfig() {
+            var w = window.innerWidth, h = window.innerHeight, e = "scroll_lock", c = "";
+            c += "rgui_browser_directory = /\n";
+            c += "input_player1_start = enter\ninput_player1_select = num1\n";
+            c += "input_player1_a = s\ninput_player1_b = a\ninput_player1_r = d\n";
+            c += "input_player1_x = w\ninput_player1_y = q\ninput_player1_l = e\n";
+            c += "input_audio_mute = f9\ninput_reset = f10\n";
+            ["input_toggle_fast_forward","input_hold_fast_forward","input_toggle_slowmotion","input_hold_slowmotion",
+             "input_save_state","input_load_state","input_toggle_fullscreen","input_exit_emulator",
+             "input_state_slot_increase","input_state_slot_decrease","input_rewind","input_movie_record_toggle",
+             "input_pause_toggle","input_frame_advance","input_shader_next","input_shader_prev",
+             "input_cheat_index_plus","input_cheat_index_minus","input_cheat_toggle","input_screenshot",
+             "input_osk_toggle","input_netplay_game_watch","input_volume_up","input_volume_down",
+             "input_overlay_next","input_disk_eject_toggle","input_disk_next","input_disk_prev",
+             "input_grab_mouse_toggle","input_game_focus_toggle","input_menu_toggle",
+             "input_recording_toggle","input_streaming_toggle"
+            ].forEach(function(k){c+=k+" = "+e+"\n"});
+            ["l2","r2","l3","r3","l_x_plus","l_x_minus","l_y_plus","l_y_minus",
+             "r_x_plus","r_x_minus","r_y_plus","r_y_minus",
+             "gun_trigger","gun_trigger_axis","gun_trigger_btn","gun_trigger_mbtn",
+             "gun_offscreen_shot","gun_aux_a","gun_aux_b","gun_aux_c",
+             "gun_start","gun_select","gun_dpad_up","gun_dpad_down","gun_dpad_left","gun_dpad_right","turbo"
+            ].forEach(function(k){c+="input_player1_"+k+" = "+e+"\n"});
+            var all=["up","down","left","right","start","select","a","b","x","y","l","l2","l3","r","r2","r3",
+                "l_x_plus","l_x_minus","l_y_plus","l_y_minus","r_x_plus","r_x_minus","r_y_plus","r_y_minus",
+                "gun_trigger","gun_trigger_axis","gun_trigger_btn","gun_trigger_mbtn",
+                "gun_offscreen_shot","gun_aux_a","gun_aux_b","gun_aux_c",
+                "gun_start","gun_select","gun_dpad_up","gun_dpad_down","gun_dpad_left","gun_dpad_right","turbo"];
+            for(var p=2;p<=5;p++){all.forEach(function(k){c+="input_player"+p+"_"+k+" = "+e+"\n"})}
+            c+="video_vsync = true\nvideo_scale = 1\n";
+            c+="video_window_x = "+w+"\nvideo_window_y = "+h+"\n";
+            c+="aspect_ratio_index = 23\ncustom_viewport_width = "+w+"\ncustom_viewport_height = "+h+"\n";
+            c+="custom_viewport_x = 0\ncustom_viewport_y = 0\naudio_latency = 128\n";
+            c+="video_message_pos_x = -100\nvideo_message_pos_y = -100\nmenu_enable_widgets = false\n";
+            return c;
         }
 
-        // Bind touch events to all virtual buttons
-        document.querySelectorAll('[data-key]').forEach(btn => {
-            const key = btn.dataset.key;
+        // Called by emu.html when emulator core is ready
+        function onEmulatorReady() {}
 
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                btn.classList.add('active');
-                simulateKey(key, 'keydown');
-            }, { passive: false });
+        // Called by emu.html when game starts rendering
+        function onEmulatorStarted() {
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("game-frame").style.display = "block";
+            document.getElementById("game-frame").style.visibility = "visible";
+        }
 
-            btn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                btn.classList.remove('active');
-                simulateKey(key, 'keyup');
-            }, { passive: false });
+        // Stubs that emu.html iframe may call via parent
+        function getSoundStatus() { return true; }
+        function enableControls() {}
+        function mobileControlsVisible() { return false; } // We handle controls ourselves
+        function goBackButtonResetIncrement() {}
 
-            btn.addEventListener('touchcancel', (e) => {
-                btn.classList.remove('active');
-                simulateKey(key, 'keyup');
+        // Step 1: Fetch ROM
+        statusEl.textContent = "Loading ROM...";
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "roms/" + ROMNAME, true);
+        xhr.responseType = "arraybuffer";
+        xhr.onprogress = function(e) {
+            if (e.lengthComputable) {
+                statusEl.textContent = "Loading ROM... " + Math.round((e.loaded / e.total) * 100) + "%";
+            }
+        };
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                ROMDATA = xhr.response;
+                RETROCFG = buildConfig();
+                statusEl.textContent = "Starting emulator...";
+
+                // Step 2: Show iframe (behind loading overlay) so canvas gets real dimensions
+                var gf = document.getElementById("game-frame");
+                gf.style.display = "block";
+                gf.style.width = (window.innerWidth || 800) + "px";
+                gf.style.height = (window.innerHeight || 600) + "px";
+                gf.src = "emu.html";
+            } else {
+                statusEl.textContent = "Failed to load ROM";
+            }
+        };
+        xhr.onerror = function() { statusEl.textContent = "Network error"; };
+        xhr.send();
+
+        // Touch controls - send key events to iframe
+        function sendKey(type, code) {
+            try {
+                var iframeDoc = document.getElementById("game-frame").contentDocument;
+                iframeDoc.body.dispatchEvent(new KeyboardEvent(type, {
+                    code: code, key: "z", char: "z", bubbles: true, cancelable: false,
+                    shiftKey: false, ctrlKey: false, altKey: false, keyCode: 90
+                }));
+            } catch(e) {}
+        }
+
+        document.querySelectorAll("[data-key]").forEach(function(btn) {
+            var key = btn.dataset.key;
+            ["touchstart", "mousedown"].forEach(function(evt) {
+                btn.addEventListener(evt, function(e) {
+                    e.preventDefault();
+                    btn.classList.add("active");
+                    sendKey("keydown", key);
+                }, { passive: false });
             });
-
-            // Mouse fallback for testing on desktop
-            btn.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                btn.classList.add('active');
-                simulateKey(key, 'keydown');
-            });
-
-            btn.addEventListener('mouseup', (e) => {
-                e.preventDefault();
-                btn.classList.remove('active');
-                simulateKey(key, 'keyup');
-            });
-
-            btn.addEventListener('mouseleave', () => {
-                btn.classList.remove('active');
-                simulateKey(key, 'keyup');
+            ["touchend", "mouseup", "touchcancel", "mouseleave"].forEach(function(evt) {
+                btn.addEventListener(evt, function() {
+                    btn.classList.remove("active");
+                    sendKey("keyup", key);
+                });
             });
         });
 
-        // Prevent zoom on double-tap
-        document.addEventListener('dblclick', (e) => e.preventDefault());
+        document.addEventListener("dblclick", function(e) { e.preventDefault(); });
     </script>
 </body>
 </html>

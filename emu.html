@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EMU</title>
+    <style>
+        * { margin: 0; padding: 0; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+        #container { width: 100%; height: 100%; }
+        #container canvas { width: 100% !important; height: 100% !important; }
+    </style>
+</head>
+<body>
+    <div id="container"><canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas></div>
+    <script>
+        function checkControls() { try { parent.onEmulatorReady(); } catch(e) {} }
+        function isMobileDevice() { return false; }
+
+        var container_width, container_height;
+
+        function cancelMainLoop() {
+            // Cancel the XMB main loop so callMain can set a new one for the game
+            try {
+                Browser.mainLoop.currentlyRunningMainloop++;
+                Browser.mainLoop.func = null;
+                Browser.mainLoop.runner = null;
+                if (Browser.mainLoop.scheduler) Browser.mainLoop.scheduler = null;
+                console.warn("[EMU] cancelled existing main loop, id now=" + Browser.mainLoop.currentlyRunningMainloop);
+            } catch(e) { console.warn("[EMU] cancelMainLoop error: " + e); }
+        }
+
+        function startEmulator() {
+            var romName = "spf2xj.zip";
+            try { romName = parent.ROMNAME; } catch(e) {}
+            console.warn("[EMU] startEmulator: callMain with /" + romName);
+
+            container_width = document.getElementById("container").offsetWidth || window.innerWidth;
+            container_height = document.getElementById("container").offsetHeight || window.innerHeight;
+
+            // Cancel XMB main loop before starting game
+            cancelMainLoop();
+            // Reset Emulator_started so the new main loop sets it
+            Emulator_started = false;
+            Emulator_running = true;
+
+            Module.callMain(["/" + romName]);
+
+            document.getElementById("canvas").width = container_width;
+            document.getElementById("canvas").height = container_height;
+            setTimeout(resizeCanvas, 500);
+            setTimeout(resizeCanvas, 1500);
+            setTimeout(resizeCanvas, 3000);
+        }
+
+        function resizeCanvas() {
+            try {
+                container_width = document.getElementById("container").offsetWidth || window.innerWidth;
+                container_height = document.getElementById("container").offsetHeight || window.innerHeight;
+                Module.setCanvasSize(container_width, container_height, true);
+            } catch(e) {}
+        }
+
+        setInterval(function() {
+            try {
+                if (typeof Emulator_started !== "undefined" && Emulator_started === true) {
+                    try { parent.onEmulatorStarted(); } catch(e) {}
+                }
+            } catch(e) {}
+        }, 500);
+
+        window.addEventListener("blur", function() { try { Emulator_running = false; } catch(e) {} });
+        window.addEventListener("focus", function() { try { Emulator_running = true; } catch(e) {} });
+        window.addEventListener("resize", resizeCanvas);
+
+        window.addEventListener("load", function() {
+            console.warn("[EMU] load event, polling for Module.calledRun");
+            var checker = setInterval(function() {
+                try {
+                    if (Module && Module.calledRun === true) {
+                        clearInterval(checker);
+                        console.warn("[EMU] runtime ready, starting in 2s");
+                        setTimeout(startEmulator, 2000);
+                    }
+                } catch(e) {}
+            }, 300);
+        });
+
+        // CRITICAL: Original Emulatrix error recovery pattern
+        // The XMB menu auto-starts from WASM init. Our callMain may fail
+        // with "only one main loop" — retry until it succeeds.
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            console.warn("[EMU] onerror: " + msg);
+            setTimeout(function() {
+                try {
+                    var romName = "spf2xj.zip";
+                    try { romName = parent.ROMNAME; } catch(e) {}
+                    console.warn("[EMU] error recovery — cancelling loop and retrying callMain");
+                    cancelMainLoop();
+                    Emulator_started = false;
+                    Emulator_running = true;
+                    Module.callMain(["/" + romName]);
+                    container_width = document.getElementById("container").offsetWidth || window.innerWidth;
+                    container_height = document.getElementById("container").offsetHeight || window.innerHeight;
+                    document.getElementById("canvas").width = container_width;
+                    document.getElementById("canvas").height = container_height;
+                } catch(e) { console.warn("[EMU] retry error: " + e); }
+            }, 5000);
+            return true;
+        };
+    </script>
+    <script src="emu_core3.js"></script>
+</body>
+</html>
