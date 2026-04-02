@@ -43,18 +43,27 @@
             height: 200px; z-index: 10000; pointer-events: none;
             touch-action: none; user-select: none; -webkit-user-select: none;
         }
-        #dpad { position: absolute; left: 20px; bottom: 20px; width: 140px; height: 140px; pointer-events: auto; }
-        .dpad-btn {
-            position: absolute; width: 48px; height: 48px;
-            background: rgba(255,255,255,0.18); border: 2px solid rgba(255,255,255,0.35);
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-            font-size: 22px; color: rgba(255,255,255,0.7); pointer-events: auto; touch-action: none;
+        #joystick-zone {
+            position: absolute; left: 10px; bottom: 10px; width: 160px; height: 160px;
+            pointer-events: auto; touch-action: none;
         }
-        .dpad-btn:active, .dpad-btn.active { background: rgba(255,255,255,0.4); }
-        #dpad-up { top: 0; left: 46px; }
-        #dpad-down { bottom: 0; left: 46px; }
-        #dpad-left { top: 46px; left: 0; }
-        #dpad-right { top: 46px; right: 0; }
+        #joystick-base {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 130px; height: 130px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(60,60,60,0.6) 0%, rgba(30,30,30,0.8) 100%);
+            border: 3px solid rgba(255,255,255,0.15);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+        }
+        #joystick-ball {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 60px; height: 60px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #e0e0e0, #888, #555);
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6), inset 0 -2px 4px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.4);
+            transition: transform 0.05s ease-out;
+            cursor: grab;
+        }
+        #joystick-ball:active { cursor: grabbing; }
 
         #buttons-right { position: absolute; right: 20px; bottom: 20px; display: flex; gap: 12px; pointer-events: auto; }
         .action-btn {
@@ -92,11 +101,10 @@
     <iframe id="game-frame"></iframe>
 
     <div id="controls">
-        <div id="dpad">
-            <div class="dpad-btn" id="dpad-up" data-key="ArrowUp">&#9650;</div>
-            <div class="dpad-btn" id="dpad-down" data-key="ArrowDown">&#9660;</div>
-            <div class="dpad-btn" id="dpad-left" data-key="ArrowLeft">&#9664;</div>
-            <div class="dpad-btn" id="dpad-right" data-key="ArrowRight">&#9654;</div>
+        <div id="joystick-zone">
+            <div id="joystick-base">
+                <div id="joystick-ball"></div>
+            </div>
         </div>
         <div id="buttons-right">
             <div class="action-btn" id="btn-b1" data-key="KeyA">A</div>
@@ -221,6 +229,62 @@
             } catch(e) {}
         }
 
+        // Joystick logic
+        var jsBall = document.getElementById("joystick-ball");
+        var jsBase = document.getElementById("joystick-base");
+        var jsActive = false;
+        var jsKeys = { up: false, down: false, left: false, right: false };
+        var jsMaxDist = 35;
+        var jsDeadZone = 10;
+
+        function jsGetCenter() {
+            var r = jsBase.getBoundingClientRect();
+            return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }
+
+        function jsUpdateDir(dx, dy) {
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            var newKeys = { up: false, down: false, left: false, right: false };
+            if (dist > jsDeadZone) {
+                var angle = Math.atan2(dy, dx);
+                // 4-way: pick the dominant axis
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    if (dx > 0) newKeys.right = true; else newKeys.left = true;
+                } else {
+                    if (dy > 0) newKeys.down = true; else newKeys.up = true;
+                }
+            }
+            if (newKeys.up !== jsKeys.up) sendKey(newKeys.up ? "keydown" : "keyup", "ArrowUp");
+            if (newKeys.down !== jsKeys.down) sendKey(newKeys.down ? "keydown" : "keyup", "ArrowDown");
+            if (newKeys.left !== jsKeys.left) sendKey(newKeys.left ? "keydown" : "keyup", "ArrowLeft");
+            if (newKeys.right !== jsKeys.right) sendKey(newKeys.right ? "keydown" : "keyup", "ArrowRight");
+            jsKeys = newKeys;
+        }
+
+        function jsMove(clientX, clientY) {
+            var c = jsGetCenter();
+            var dx = clientX - c.x, dy = clientY - c.y;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > jsMaxDist) { dx = dx / dist * jsMaxDist; dy = dy / dist * jsMaxDist; }
+            jsBall.style.transform = "translate(calc(-50% + " + dx + "px), calc(-50% + " + dy + "px))";
+            jsUpdateDir(dx, dy);
+        }
+
+        function jsReset() {
+            jsActive = false;
+            jsBall.style.transform = "translate(-50%, -50%)";
+            jsUpdateDir(0, 0);
+        }
+
+        jsBase.addEventListener("touchstart", function(e) { e.preventDefault(); jsActive = true; jsMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+        jsBase.addEventListener("mousedown", function(e) { e.preventDefault(); jsActive = true; jsMove(e.clientX, e.clientY); }, { passive: false });
+        document.addEventListener("touchmove", function(e) { if (jsActive) { e.preventDefault(); jsMove(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: false });
+        document.addEventListener("mousemove", function(e) { if (jsActive) jsMove(e.clientX, e.clientY); });
+        document.addEventListener("touchend", function() { if (jsActive) jsReset(); });
+        document.addEventListener("touchcancel", function() { if (jsActive) jsReset(); });
+        document.addEventListener("mouseup", function() { if (jsActive) jsReset(); });
+
+        // Action buttons (COIN, START, A, B)
         document.querySelectorAll("[data-key]").forEach(function(btn) {
             var key = btn.dataset.key;
             ["touchstart", "mousedown"].forEach(function(evt) {
