@@ -77,10 +77,8 @@
         #btn-coin { border-color: rgba(255,200,0,0.5); color: rgba(255,220,50,0.9); }
         #btn-start { border-color: rgba(0,255,100,0.5); color: rgba(0,255,100,0.9); }
 
-        @media (hover: none) and (pointer: coarse) {
-            #controls { display: block; }
-            #game-frame { height: calc(100vh - 210px); }
-        }
+        #controls { display: block !important; }
+        #game-frame { height: calc(100vh - 210px); }
     </style>
 </head>
 <body>
@@ -201,12 +199,24 @@
         xhr.send();
 
         // Touch controls - send key events to iframe
+        var keyMap = {
+            "ArrowUp":    { key: "ArrowUp",    keyCode: 38 },
+            "ArrowDown":  { key: "ArrowDown",  keyCode: 40 },
+            "ArrowLeft":  { key: "ArrowLeft",  keyCode: 37 },
+            "ArrowRight": { key: "ArrowRight", keyCode: 39 },
+            "KeyA":       { key: "a",          keyCode: 65 },
+            "KeyS":       { key: "s",          keyCode: 83 },
+            "Digit1":     { key: "1",          keyCode: 49 },
+            "Enter":      { key: "Enter",      keyCode: 13 }
+        };
         function sendKey(type, code) {
             try {
-                var iframeDoc = document.getElementById("game-frame").contentDocument;
-                iframeDoc.body.dispatchEvent(new KeyboardEvent(type, {
-                    code: code, key: "z", char: "z", bubbles: true, cancelable: false,
-                    shiftKey: false, ctrlKey: false, altKey: false, keyCode: 90
+                var m = keyMap[code] || { key: code, keyCode: 0 };
+                var gf = document.getElementById("game-frame");
+                var target = gf.contentDocument.body;
+                target.dispatchEvent(new KeyboardEvent(type, {
+                    code: code, key: m.key, keyCode: m.keyCode, which: m.keyCode,
+                    bubbles: true, cancelable: true
                 }));
             } catch(e) {}
         }

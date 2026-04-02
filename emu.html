@@ -20,11 +20,11 @@
 
         function cancelMainLoop() {
             // Cancel the XMB main loop so callMain can set a new one for the game
+            // Only increment the id and clear func — keep scheduler/runner intact
+            // so the new loop registered by callMain can be scheduled properly
             try {
                 Browser.mainLoop.currentlyRunningMainloop++;
                 Browser.mainLoop.func = null;
-                Browser.mainLoop.runner = null;
-                if (Browser.mainLoop.scheduler) Browser.mainLoop.scheduler = null;
                 console.warn("[EMU] cancelled existing main loop, id now=" + Browser.mainLoop.currentlyRunningMainloop);
             } catch(e) { console.warn("[EMU] cancelMainLoop error: " + e); }
         }
