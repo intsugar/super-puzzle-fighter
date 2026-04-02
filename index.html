@@ -6,11 +6,12 @@
     <title>Super Puzzle Fighter II</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { background: #000; width: 100%; height: 100%; overflow: hidden; }
+        html, body { background: #0a0a12; width: 100%; height: 100%; overflow: hidden; }
 
+        /* === LOADING === */
         #loading {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: #000; z-index: 9999;
+            background: #0a0a12; z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         #loading .title {
@@ -33,61 +34,200 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        #game-frame {
-            width: 100vw; height: 100vh; border: none;
-            display: none; position: absolute; top: 0; left: 0;
+        /* === CABINET LAYOUT === */
+        #cabinet {
+            display: none; width: 100%; height: 100%;
+            flex-direction: column; position: relative;
         }
 
-        #controls {
-            display: none; position: fixed; bottom: 0; left: 0; right: 0;
-            height: 200px; z-index: 10000; pointer-events: none;
-            touch-action: none; user-select: none; -webkit-user-select: none;
+        /* Marquee / header strip */
+        #marquee {
+            height: 32px; flex-shrink: 0;
+            background: linear-gradient(180deg, #1a1a3a 0%, #0d0d20 100%);
+            border-bottom: 2px solid #2a2a5a;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 11px; font-weight: bold; color: #8888cc;
+            letter-spacing: 3px; text-transform: uppercase;
         }
+        #marquee span {
+            color: #ffcc00; margin: 0 6px;
+            text-shadow: 0 0 8px rgba(255,200,0,0.4);
+        }
+
+        /* Screen bezel area */
+        #screen-bezel {
+            flex: 1; position: relative; overflow: hidden;
+            background: #000;
+            border-left: 6px solid #1a1a2e;
+            border-right: 6px solid #1a1a2e;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8), inset 0 0 4px rgba(100,100,200,0.1);
+        }
+        /* CRT scanline overlay */
+        #screen-bezel::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.08) 2px,
+                rgba(0,0,0,0.08) 4px
+            );
+            pointer-events: none; z-index: 2;
+        }
+        /* Screen glow */
+        #screen-bezel::before {
+            content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border: 1px solid rgba(80,80,180,0.15);
+            box-shadow: 0 0 15px rgba(60,60,160,0.1);
+            pointer-events: none; z-index: 1;
+        }
+
+        #game-frame {
+            width: 100%; height: 100%; border: none;
+            display: block; position: relative; z-index: 0;
+        }
+
+        /* === CONTROL PANEL === */
+        #control-panel {
+            height: 40%; flex-shrink: 0; position: relative;
+            background: linear-gradient(180deg, #1c1c2e 0%, #12121e 40%, #0e0e18 100%);
+            border-top: 3px solid #2a2a4a;
+        }
+        /* Panel surface texture */
+        #control-panel::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 30% 30%, rgba(60,60,120,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 60%, rgba(40,40,100,0.06) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        /* Metal edge strip */
+        #control-panel::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, #333355, #5555aa, #333355);
+            opacity: 0.4;
+        }
+
+        /* Player label */
+        #player-label {
+            position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 10px; font-weight: bold; color: #4a4a7a;
+            letter-spacing: 4px; text-transform: uppercase;
+        }
+
+        /* COIN/START row */
+        #coin-start-row {
+            position: absolute; top: 8px; right: 14px;
+            display: flex; gap: 8px;
+        }
+        .coin-start-btn {
+            padding: 5px 14px; border-radius: 4px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 10px; font-weight: bold; letter-spacing: 1px;
+            pointer-events: auto; touch-action: none; text-transform: uppercase;
+            cursor: pointer; transition: all 0.1s;
+        }
+        .coin-start-btn:active, .coin-start-btn.active { transform: scale(0.95); }
+        #btn-coin {
+            background: linear-gradient(180deg, #3a3520, #2a2510);
+            border: 1px solid #665520; color: #ddaa22;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,200,50,0.1);
+        }
+        #btn-start {
+            background: linear-gradient(180deg, #1a3520, #102510);
+            border: 1px solid #206530; color: #22cc55;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(50,255,100,0.1);
+        }
+
+        /* Joystick */
         #joystick-zone {
-            position: absolute; left: 10px; bottom: 10px; width: 160px; height: 160px;
+            position: absolute; left: 20px; bottom: 16px;
+            width: 150px; height: 150px;
             pointer-events: auto; touch-action: none;
         }
         #joystick-base {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 130px; height: 130px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(60,60,60,0.6) 0%, rgba(30,30,30,0.8) 100%);
-            border: 3px solid rgba(255,255,255,0.15);
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+            width: 120px; height: 120px; border-radius: 50%;
+            background: radial-gradient(circle, #1a1a2a 0%, #0e0e18 70%, #08080f 100%);
+            border: 3px solid #2a2a44;
+            box-shadow: inset 0 3px 10px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5);
+        }
+        /* Gate markers */
+        #joystick-base::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90px; height: 90px; border-radius: 50%;
+            border: 1px dashed rgba(255,255,255,0.06);
         }
         #joystick-ball {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 60px; height: 60px; border-radius: 50%;
-            background: radial-gradient(circle at 35% 35%, #e0e0e0, #888, #555);
-            border: 2px solid rgba(255,255,255,0.3);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.6), inset 0 -2px 4px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.4);
+            width: 54px; height: 54px; border-radius: 50%;
+            background: radial-gradient(circle at 38% 35%, #444, #222, #111);
+            border: 2px solid #3a3a50;
+            box-shadow:
+                0 6px 16px rgba(0,0,0,0.7),
+                inset 0 -3px 6px rgba(0,0,0,0.5),
+                inset 0 3px 6px rgba(255,255,255,0.08);
             transition: transform 0.05s ease-out;
             cursor: grab;
         }
         #joystick-ball:active { cursor: grabbing; }
 
-        #buttons-right { position: absolute; right: 20px; bottom: 20px; display: flex; gap: 12px; pointer-events: auto; }
+        /* Action buttons area */
+        #buttons-area {
+            position: absolute; right: 16px; bottom: 20px;
+            display: flex; gap: 14px; align-items: flex-end;
+            pointer-events: auto;
+        }
         .action-btn {
-            width: 60px; height: 60px; border-radius: 50%;
-            border: 2px solid rgba(0,150,255,0.6); background: rgba(0,150,255,0.35);
+            width: 64px; height: 64px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: bold; color: #fff; pointer-events: auto; touch-action: none;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 13px; font-weight: bold; color: #fff;
+            pointer-events: auto; touch-action: none;
+            cursor: pointer; transition: all 0.08s;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
-        .action-btn:active, .action-btn.active { transform: scale(0.93); }
-        #btn-b2 { border-color: rgba(255,100,0,0.6); background: rgba(255,100,0,0.35); }
-
-        #buttons-top { position: absolute; top: 10px; right: 10px; display: flex; gap: 10px; pointer-events: auto; }
-        .top-btn {
-            padding: 8px 16px; border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.12);
-            color: rgba(255,255,255,0.8); font-size: 12px; font-weight: bold;
-            pointer-events: auto; touch-action: none; text-transform: uppercase;
+        .action-btn:active, .action-btn.active {
+            transform: scale(0.92); filter: brightness(1.3);
         }
-        .top-btn:active, .top-btn.active { background: rgba(255,255,255,0.35); }
-        #btn-coin { border-color: rgba(255,200,0,0.5); color: rgba(255,220,50,0.9); }
-        #btn-start { border-color: rgba(0,255,100,0.5); color: rgba(0,255,100,0.9); }
+        #btn-b1 {
+            background: radial-gradient(circle at 40% 35%, #3366dd, #2244aa, #1a3388);
+            border: 3px solid #4477ee;
+            box-shadow: 0 4px 12px rgba(30,60,180,0.5), inset 0 2px 4px rgba(255,255,255,0.15), inset 0 -2px 4px rgba(0,0,0,0.3);
+        }
+        #btn-b2 {
+            background: radial-gradient(circle at 40% 35%, #dd4422, #aa2211, #882211);
+            border: 3px solid #ee5533;
+            box-shadow: 0 4px 12px rgba(180,30,20,0.5), inset 0 2px 4px rgba(255,255,255,0.15), inset 0 -2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 8px;
+        }
 
-        #controls { display: block !important; }
-        #game-frame { height: calc(100vh - 210px); }
+        /* Decorative screws */
+        .screw {
+            position: absolute; width: 10px; height: 10px; border-radius: 50%;
+            background: radial-gradient(circle at 40% 35%, #555, #333, #222);
+            border: 1px solid #444;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.1);
+        }
+        .screw::after {
+            content: '+'; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8px; color: rgba(255,255,255,0.2); line-height: 1;
+        }
+        #screw-tl { top: 6px; left: 6px; }
+        #screw-tr { top: 6px; right: 6px; }
+        #screw-bl { bottom: 6px; left: 6px; }
+        #screw-br { bottom: 6px; right: 6px; }
+
+        /* Bottom edge / coin door hint */
+        #cab-bottom {
+            height: 6px; flex-shrink: 0;
+            background: linear-gradient(180deg, #0a0a14, #050508);
+            border-top: 1px solid #1a1a30;
+        }
     </style>
 </head>
 <body>
@@ -98,32 +238,40 @@
         <div class="status" id="load-status">Loading...</div>
     </div>
 
-    <iframe id="game-frame"></iframe>
-
-    <div id="controls">
-        <div id="joystick-zone">
-            <div id="joystick-base">
-                <div id="joystick-ball"></div>
+    <div id="cabinet">
+        <div id="marquee">CPS-II <span>///</span> CAPCOM PLAY SYSTEM II</div>
+        <div id="screen-bezel">
+            <iframe id="game-frame"></iframe>
+        </div>
+        <div id="control-panel">
+            <div id="player-label">1 PLAYER</div>
+            <div id="coin-start-row">
+                <div class="coin-start-btn" id="btn-coin" data-key="Digit1">COIN</div>
+                <div class="coin-start-btn" id="btn-start" data-key="Enter">START</div>
             </div>
+            <div id="joystick-zone">
+                <div id="joystick-base">
+                    <div id="joystick-ball"></div>
+                </div>
+            </div>
+            <div id="buttons-area">
+                <div class="action-btn" id="btn-b1" data-key="KeyA">A</div>
+                <div class="action-btn" id="btn-b2" data-key="KeyS">B</div>
+            </div>
+            <div class="screw" id="screw-tl"></div>
+            <div class="screw" id="screw-tr"></div>
+            <div class="screw" id="screw-bl"></div>
+            <div class="screw" id="screw-br"></div>
         </div>
-        <div id="buttons-right">
-            <div class="action-btn" id="btn-b1" data-key="KeyA">A</div>
-            <div class="action-btn" id="btn-b2" data-key="KeyS">B</div>
-        </div>
-        <div id="buttons-top">
-            <div class="top-btn" id="btn-coin" data-key="Digit1">COIN</div>
-            <div class="top-btn" id="btn-start" data-key="Enter">START</div>
-        </div>
+        <div id="cab-bottom"></div>
     </div>
 
     <script>
-        // Global variables accessed by emu.html via parent.ROMDATA / parent.ROMNAME / parent.RETROCFG
         var ROMDATA = null;
         var ROMNAME = "spf2xj.zip";
         var RETROCFG = "";
         var statusEl = document.getElementById("load-status");
 
-        // Build retroarch config
         function buildConfig() {
             var w = window.innerWidth, h = window.innerHeight, e = "scroll_lock", c = "";
             c += "rgui_browser_directory = /\n";
@@ -161,23 +309,18 @@
             return c;
         }
 
-        // Called by emu.html when emulator core is ready
         function onEmulatorReady() {}
-
-        // Called by emu.html when game starts rendering
         function onEmulatorStarted() {
             document.getElementById("loading").style.display = "none";
-            document.getElementById("game-frame").style.display = "block";
-            document.getElementById("game-frame").style.visibility = "visible";
+            document.getElementById("cabinet").style.display = "flex";
         }
 
-        // Stubs that emu.html iframe may call via parent
         function getSoundStatus() { return true; }
         function enableControls() {}
-        function mobileControlsVisible() { return false; } // We handle controls ourselves
+        function mobileControlsVisible() { return false; }
         function goBackButtonResetIncrement() {}
 
-        // Step 1: Fetch ROM
+        // Fetch ROM
         statusEl.textContent = "Loading ROM...";
         var xhr = new XMLHttpRequest();
         xhr.open("GET", "roms/" + ROMNAME, true);
@@ -192,12 +335,9 @@
                 ROMDATA = xhr.response;
                 RETROCFG = buildConfig();
                 statusEl.textContent = "Starting emulator...";
-
-                // Step 2: Show iframe (behind loading overlay) so canvas gets real dimensions
                 var gf = document.getElementById("game-frame");
-                gf.style.display = "block";
                 gf.style.width = (window.innerWidth || 800) + "px";
-                gf.style.height = (window.innerHeight || 600) + "px";
+                gf.style.height = (window.innerHeight * 0.6 || 400) + "px";
                 gf.src = "emu.html";
             } else {
                 statusEl.textContent = "Failed to load ROM";
@@ -206,7 +346,7 @@
         xhr.onerror = function() { statusEl.textContent = "Network error"; };
         xhr.send();
 
-        // Touch controls - send key events to iframe
+        // Key dispatch to iframe
         var keyMap = {
             "ArrowUp":    { key: "ArrowUp",    keyCode: 38 },
             "ArrowDown":  { key: "ArrowDown",  keyCode: 40 },
@@ -229,12 +369,12 @@
             } catch(e) {}
         }
 
-        // Joystick logic
+        // Joystick
         var jsBall = document.getElementById("joystick-ball");
         var jsBase = document.getElementById("joystick-base");
         var jsActive = false;
         var jsKeys = { up: false, down: false, left: false, right: false };
-        var jsMaxDist = 35;
+        var jsMaxDist = 32;
         var jsDeadZone = 10;
 
         function jsGetCenter() {
@@ -246,8 +386,6 @@
             var dist = Math.sqrt(dx * dx + dy * dy);
             var newKeys = { up: false, down: false, left: false, right: false };
             if (dist > jsDeadZone) {
-                var angle = Math.atan2(dy, dx);
-                // 4-way: pick the dominant axis
                 if (Math.abs(dx) > Math.abs(dy)) {
                     if (dx > 0) newKeys.right = true; else newKeys.left = true;
                 } else {
@@ -284,7 +422,7 @@
         document.addEventListener("touchcancel", function() { if (jsActive) jsReset(); });
         document.addEventListener("mouseup", function() { if (jsActive) jsReset(); });
 
-        // Action buttons (COIN, START, A, B)
+        // Action buttons
         document.querySelectorAll("[data-key]").forEach(function(btn) {
             var key = btn.dataset.key;
             ["touchstart", "mousedown"].forEach(function(evt) {
