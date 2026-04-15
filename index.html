@@ -314,9 +314,21 @@
         }
 
         function onEmulatorReady() {}
+        var emuStarted = false;
         function onEmulatorStarted() {
+            if (emuStarted) return;
+            emuStarted = true;
             document.getElementById("loading").style.display = "none";
         }
+
+        // Fallback: hide loading after 15s even if Emulator_started never fires
+        // Fixes Firefox where rAF may be throttled
+        setTimeout(function() {
+            if (!emuStarted) {
+                console.warn("[INDEX] Fallback: hiding loading after timeout");
+                onEmulatorStarted();
+            }
+        }, 15000);
 
         function getSoundStatus() { return true; }
         function enableControls() {}
