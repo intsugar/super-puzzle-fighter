@@ -13,6 +13,12 @@
 <body>
     <div id="container"><canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas></div>
     <script>
+        // MOBILE IFRAME FIX: requestAnimationFrame doesn't reliably fire inside
+        // iframes on mobile Chrome/Firefox. Replace with setTimeout globally.
+        window.requestAnimationFrame = function(cb) { return window.setTimeout(cb, 1000 / 60); };
+        window.cancelAnimationFrame = function(id) { return window.clearTimeout(id); };
+        console.warn("[EMU] rAF replaced with setTimeout for iframe compatibility");
+
         function checkControls() { try { parent.onEmulatorReady(); } catch(e) {} }
         function isMobileDevice() { return false; }
 
@@ -51,30 +57,6 @@
             setTimeout(resizeCanvas, 1500);
             setTimeout(resizeCanvas, 3000);
 
-            // FRAME-KICK: On mobile Chrome/Firefox, requestAnimationFrame may not
-            // fire for iframes. Check if frames flow, if not patch scheduler to setTimeout.
-            setTimeout(function() {
-                try {
-                    var framesBefore = Browser.mainLoop.currentFrameNumber || 0;
-                    if (framesBefore === 0 && Browser.mainLoop.runner) {
-                        setTimeout(Browser.mainLoop.runner, 0);
-                    }
-                    setTimeout(function() {
-                        try {
-                            var framesNow = Browser.mainLoop.currentFrameNumber || 0;
-                            if (framesNow < 2) {
-                                console.warn("[EMU] rAF not working, switching to setTimeout scheduler");
-                                Browser.mainLoop.scheduler = function() {
-                                    setTimeout(Browser.mainLoop.runner, 1000 / 60);
-                                };
-                                if (Browser.mainLoop.runner) setTimeout(Browser.mainLoop.runner, 0);
-                            } else {
-                                console.warn("[EMU] rAF working, frames: " + framesNow);
-                            }
-                        } catch(e) { console.warn("[EMU] scheduler patch error: " + e); }
-                    }, 500);
-                } catch(e) { console.warn("[EMU] kick error: " + e); }
-            }, 200);
         }
 
         function resizeCanvas() {
@@ -126,22 +108,6 @@
                     container_height = document.getElementById("container").offsetHeight || window.innerHeight;
                     document.getElementById("canvas").width = container_width;
                     document.getElementById("canvas").height = container_height;
-                    // Frame-kick for retry path
-                    setTimeout(function() {
-                        try {
-                            if (Browser.mainLoop.runner) setTimeout(Browser.mainLoop.runner, 0);
-                            setTimeout(function() {
-                                try {
-                                    if ((Browser.mainLoop.currentFrameNumber || 0) < 2) {
-                                        Browser.mainLoop.scheduler = function() {
-                                            setTimeout(Browser.mainLoop.runner, 1000 / 60);
-                                        };
-                                        if (Browser.mainLoop.runner) setTimeout(Browser.mainLoop.runner, 0);
-                                    }
-                                } catch(e) {}
-                            }, 500);
-                        } catch(e) {}
-                    }, 200);
                 } catch(e) { console.warn("[EMU] retry error: " + e); }
             }, 5000);
             return true;

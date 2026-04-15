@@ -358,7 +358,7 @@
                 var gf = document.getElementById("game-frame");
                 gf.style.width = (window.innerWidth || 800) + "px";
                 gf.style.height = (window.innerHeight * 0.6 || 400) + "px";
-                gf.src = "emu.html";
+                gf.src = "emu.html?v=" + Date.now();
             } else {
                 statusEl.textContent = "Failed to load ROM";
             }
