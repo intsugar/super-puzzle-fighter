@@ -316,7 +316,6 @@
         function onEmulatorReady() {}
         function onEmulatorStarted() {
             document.getElementById("loading").style.display = "none";
-            document.getElementById("cabinet").style.display = "flex";
         }
 
         function getSoundStatus() { return true; }
@@ -339,6 +338,9 @@
                 ROMDATA = xhr.response;
                 RETROCFG = buildConfig();
                 statusEl.textContent = "Starting emulator...";
+                // Show cabinet behind loading overlay so iframe is visible
+                // Firefox requires visible iframes for rAF to fire
+                document.getElementById("cabinet").style.display = "flex";
                 var gf = document.getElementById("game-frame");
                 gf.style.width = (window.innerWidth || 800) + "px";
                 gf.style.height = (window.innerHeight * 0.6 || 400) + "px";
