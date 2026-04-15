@@ -321,14 +321,16 @@
             document.getElementById("loading").style.display = "none";
         }
 
-        // Fallback: hide loading after 15s even if Emulator_started never fires
-        // Fixes Firefox where rAF may be throttled
+        // Fallback: hide loading after 12s even if Emulator_started never fires
         setTimeout(function() {
             if (!emuStarted) {
-                console.warn("[INDEX] Fallback: hiding loading after timeout");
+                try {
+                    var w = document.getElementById("game-frame").contentWindow;
+                    if (w.Emulator_running !== undefined) w.Emulator_running = true;
+                } catch(e) {}
                 onEmulatorStarted();
             }
-        }, 15000);
+        }, 12000);
 
         function getSoundStatus() { return true; }
         function enableControls() {}

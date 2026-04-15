@@ -62,14 +62,12 @@
 
         setInterval(function() {
             try {
+                if (typeof Emulator_running !== "undefined") Emulator_running = true;
                 if (typeof Emulator_started !== "undefined" && Emulator_started === true) {
                     try { parent.onEmulatorStarted(); } catch(e) {}
                 }
             } catch(e) {}
         }, 500);
-
-        window.addEventListener("blur", function() { try { Emulator_running = false; } catch(e) {} });
-        window.addEventListener("focus", function() { try { Emulator_running = true; } catch(e) {} });
         window.addEventListener("resize", resizeCanvas);
 
         window.addEventListener("load", function() {
